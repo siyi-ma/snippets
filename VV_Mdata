@@ -1,0 +1,54 @@
+M_data
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\A_Õppetegevuse failid\Vastuvõtt\Statistika vastuvõtt\Kandidaadid\Riigieksamid\Riigieksamid kandidaadid majandus 2023.xlsx"), null, true),
+    preparation_Sheet = Source{[Item="preparation",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(preparation_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"õppekava", type text}, {"õppeaasta", type text}, {"Avalduse number", type text}, {"Avalduse staatus", type text}, {"Lõpetatud kool", type text}, {"Isikukood", Int64.Type}, {"Tunnustus", type text}, {"eksam", type text}, {"Value", Int64.Type}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Tunnustus", "Isikukood", "Lõpetatud kool"}),
+    #"Filtered Rows" = Table.SelectRows(#"Removed Columns", each ([õppeaasta] <> "2018/19")),
+    #"Extracted First Characters" = Table.TransformColumns(#"Filtered Rows", {{"õppeaasta", each Text.Start(_, 4), type text}}),
+    #"Filtered Rows1" = Table.SelectRows(#"Extracted First Characters", each ([eksam] = "Eesti keel (Riigieksam)" or [eksam] = "Eesti keel teise keelena (Riigieksam)" or [eksam] = "Lai matemaatika (Riigieksam)")),
+    #"Replaced Value" = Table.ReplaceValue(#"Filtered Rows1"," (Riigieksam)","",Replacer.ReplaceText,{"eksam"}),
+    #"Trimmed Text" = Table.TransformColumns(#"Replaced Value",{{"eksam", Text.Trim, type text}}),
+    addUusStaatus = Table.RemoveColumns(
+Table.AddColumn(#"Trimmed Text", "staatus", each let list0 = List.Buffer(avalStatus[vana]), 
+list1 = List.Buffer(avalStatus[uus]),
+result = try list1{List.PositionOf(list0, [Avalduse staatus])} otherwise "check"
+in result, type text),
+"Avalduse staatus"),
+    #"Pivoted Column" = Table.Pivot(addUusStaatus, List.Distinct(addUusStaatus[eksam]), "eksam", "Value", List.Sum),
+    #"add_eesti1+math" = Table.AddColumn(#"Pivoted Column", "eesti1+math", each let 
+eesti1 = try if [#"Eesti keel"] >=55 then [#"Eesti keel"] else null otherwise null,
+math = try if [#"Lai matemaatika"]>=50 then [#"Lai matemaatika"] else null otherwise null, 
+result = eesti1 + math
+in result, Int64.Type),
+    #"add_eesti2+math" = Table.AddColumn(#"add_eesti1+math", "eesti2+math", each let 
+eesti2= try if [Eesti keel teise keelena]>=75 then [Eesti keel teise keelena] else null otherwise null,
+math = try if [Lai matemaatika]>=50 then [Lai matemaatika] else null otherwise null, 
+result = eesti2 + math
+in result, Int64.Type)
+in
+    #"add_eesti2+math"
+
+
+M_data_unpivot
+let
+    Source = M_data,
+    #"Removed Columns" = Table.RemoveColumns(Source,{"Avalduse number"}),
+    #"Unpivoted Columns" = Table.UnpivotOtherColumns(#"Removed Columns", {"õppekava", "õppeaasta", "staatus"}, "eksam", "punkt")
+in
+    #"Unpivoted Columns"
+
+mdata_whatif
+let
+    Source = M_data,
+    m_data_whatif = Table.AddColumn(
+Table.CombineColumns(
+Table.TransformColumnTypes( 
+Table.Group(Source, {"õppeaasta", "Eesti keel", "Lai matemaatika", "Eesti keel teise keelena", "eesti1+math", "eesti2+math"}, {{"mtable", each _, type table}}),
+{{"õppeaasta", type text},{"Eesti keel", type text}, {"Lai matemaatika", type text}, {"Eesti keel teise keelena", type text}, {"eesti1+math", type text}, {"eesti2+math", type text}}, "en-GB"),{"õppeaasta", "Eesti keel", "Lai matemaatika", "Eesti keel teise keelena", "eesti1+math", "eesti2+math"},Combiner.CombineTextByDelimiter("-", QuoteStyle.None),"key"),
+"count", each Table.RowCount([mtable]), Int64.Type),
+    #"Expanded mtable" = Table.ExpandTableColumn(m_data_whatif, "mtable", {"õppekava", "õppeaasta", "staatus", "Eesti keel", "Lai matemaatika", "Eesti keel teise keelena", "eesti1+math", "eesti2+math"}, {"õppekava", "õppeaasta", "staatus", "Eesti keel", "Lai matemaatika", "Eesti keel teise keelena", "eesti1+math", "eesti2+math"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded mtable",{{"õppekava", type text}, {"õppeaasta", Int64.Type}, {"staatus", type text}, {"Eesti keel", Int64.Type}, {"Lai matemaatika", Int64.Type}, {"Eesti keel teise keelena", Int64.Type}, {"eesti1+math", Int64.Type}, {"eesti2+math", Int64.Type}, {"count", Int64.Type}})
+in
+    #"Changed Type"
