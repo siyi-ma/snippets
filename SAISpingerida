@@ -1,0 +1,96 @@
+fnPingerida = 
+(Source as table) =>
+let
+replaceComma =  Table.ReplaceValue(Table.PromoteHeaders(Source),",",".",Replacer.ReplaceText,{"Punktid"}),
+cleanSource = Table.SelectRows(
+Table.RemoveColumns(
+Table.TransformColumns(
+Table.TransformColumnTypes(  
+Table.TransformColumns(replaceComma, {{"vastuvõtuarv", each Text.AfterDelimiter(Text.Clean(_), ": "), type text}, {"vastuvõtulävend", each Text.AfterDelimiter(Text.Clean(_), ": "), type text}}),
+{{"vastuvõtuarv", Int64.Type}, {"vastuvõtulävend", Int64.Type}, {"Punktid", type number}, {"Nr_", Int64.Type}, {"web-scraper-start-url", type text}}),
+{{"web-scraper-start-url", each Text.AfterDelimiter(_, "=", 1),  type text}}),
+{"web-scraper-order"}),
+each ([Avalduse number] <> ""))
+in
+    cleanSource
+
+fnNimekiri = 
+(Source as table) =>
+let
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    #"Removed Columns" = Table.RemoveColumns(#"Promoted Headers",{"web-scraper-order"}),
+    addUrlKey = Table.TransformColumns(#"Removed Columns", {{"web-scraper-start-url", each Text.AfterDelimiter(_, "=", 1) , type text}}),
+    #"Grouped Rows" = Table.Group(addUrlKey, {"web-scraper-start-url", "kava"}, {{"vastu võetud", each Table.RowCount(_), Int64.Type}})
+in
+    #"Grouped Rows"
+
+SAIS_folderpath =
+let
+    Source = SharePoint.Contents("https://livettu-my.sharepoint.com/personal/siyi_ma_taltech_ee"),
+    Documents = Source{[Name="Documents"]}[Content],
+    SAIS = Documents{[Name="SAIS"]}[Content],
+    csv = SAIS{[Name="csv"]}[Content]
+in
+    csv
+
+pingerida
+let
+    Source = SAIS_folderpath,
+    sais20pingerida = fnPingerida(Csv.Document(Source{[Name="vv2020"]}[Content]{[Name="sais20pingerida.csv"]}[Content],[Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais21pingerida = fnPingerida(Csv.Document(Source{[Name="vv2021"]}[Content]{[Name="sais21pingerida.csv"]}[Content],[Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais22pingerida = fnPingerida(Csv.Document(Source{[Name="vv2022"]}[Content]{[Name="sais22pingerida.csv"]}[Content],[Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais23pingerida = fnPingerida(Csv.Document(Source{[Name="vv2023"]}[Content]{[Name="sais23pingerida.csv"]}[Content],[Delimiter=",", Columns=8, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    _combine = Table.Distinct(Table.Combine({sais20pingerida,sais21pingerida, sais22pingerida, sais23pingerida}))
+in
+    _combine
+
+
+nimekiri
+let
+    Source = SAIS_folderpath,
+    sais20nimekiri = fnNimekiri(Csv.Document(Source{[Name="vv2020"]}[Content]{[Name="sais20nimekiri.csv"]}[Content],[Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais21nimekiri = fnNimekiri(Csv.Document(Source{[Name="vv2021"]}[Content]{[Name="sais21nimekiri.csv"]}[Content],[Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais22nimekiri = fnNimekiri(Csv.Document(Source{[Name="vv2022"]}[Content]{[Name="sais22nimekiri.csv"]}[Content],[Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    sais23nimekiri = fnNimekiri(Csv.Document(Source{[Name="vv2023"]}[Content]{[Name="sais23nimekiri.csv"]}[Content],[Delimiter=",", Columns=4, Encoding=65001, QuoteStyle=QuoteStyle.Csv])),
+    _combine = Table.Distinct( 
+Table.Combine({sais20nimekiri, sais21nimekiri, sais22nimekiri, sais23nimekiri}))
+in
+    _combine
+
+htm
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\A_Õppetegevuse failid\Vastuvõtt\Statistika vastuvõtt\Balti_sisseastumisinfo_koolide_lõikes_alates_2019.xlsx"), null, true),
+    #"HTM kood_Sheet" = Source{[Item="HTM kood",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(#"HTM kood_Sheet", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"asutus kood", type text}, {"reg nr", Int64.Type}, {"ETIS-e ID", Int64.Type}, {"asutus", type text}, {"kavakood", Int64.Type}, {"kava nimetus", type text}, {"nimetus i.k.", type text}, {"õppetase", type text}, {"EQF tase", Int64.Type}, {"kvalifikatsiooni dokument", type text}, {"kvalifikatsiooni vastavus kehtivas raamistikus", type text}, {"Akadeemiline kraad või diplom", type text}, {"maht", type any}, {"rühm", type text}, {"õppekavagrupp", type text}, {"vastuvõtu olek", type text}, {"registreeritud", type date}, {"õppekeeled", type text}, {"Nominaalkestus (aasta)", type number}, {"õppe läbiviimise õigus / Kutsestandardid", type text}, {"õppe läbiviimise õigus kehtib alates / Kehtib alates", type date}, {"Spetsialiseerumised /täpsustus", type text}, {"Lõppkuupäev / Kehtib kuni", type date}, {"kava_url", type text}}),
+    #"Removed Errors" = Table.RemoveRowsWithErrors(#"Changed Type", {"kavakood"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Errors",{"asutus kood", "kavakood", "kava nimetus", "nimetus i.k.", "Nominaalkestus (aasta)", "registreeritud", "rühm", "õppekavagrupp"})
+in
+    #"Removed Other Columns"
+
+sais_kavad
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\A_Õppetegevuse failid\Vastuvõtt\Statistika vastuvõtt\Balti 2023 Sisseastumisinfo_koolide_lõikes.xlsx"), null, true),
+    SAIS_kavakood_Table = Source{[Item="SAIS_kavakood",Kind="Table"]}[Data],
+    #"Filtered Rows" = Table.SelectRows(SAIS_kavakood_Table, each ([aasta] <> 2019)),
+    #"Changed Type" = Table.TransformColumnTypes(#"Filtered Rows",{{"kava", type text}, {"url", type text}, {"aasta", Int64.Type}, {"ülikool", type text}, {"tase", type text}, {"õppekava nimetus", type text}, {"Vastuvõtuarv", Int64.Type}, {"vastuvõtulävend", Int64.Type}, {"kategooria", type text}, {"HTM kood", Int64.Type}}),
+    addUrlKey = Table.AddColumn(#"Changed Type", "url_key", each Text.AfterDelimiter([url], "=",1) , type text),
+    replaceTase = Table.RemoveColumns (Table.AddColumn(addUrlKey, "oppetase", each List.Accumulate(
+List.Numbers(0, Table.RowCount(replaceTase)), [tase],
+(state, current) => Text.Replace(state, replaceTase[vana]{current}, replaceTase[uus]{current})), type text),
+"tase"),
+    addNimekiriLink = Table.AddColumn(replaceTase, "SAIS nimekiri hyperlink", each Text.Replace([url],"Rankings","Accepted"), type text),
+    #"Renamed Columns" = Table.RenameColumns(addNimekiriLink,{{"url", "SAIS pingerida hyperlink"},{"oppetase", "tase"}}),
+    #"Filtered Rows2" = Table.SelectRows(#"Renamed Columns", each ([url_key] <> "") and ([HTM kood] <> null)),
+    #"Sorted Rows" = Table.Sort(#"Filtered Rows2",{{"aasta", Order.Descending}})
+in
+    #"Sorted Rows"
+
+replaceTase
+let
+    Source = Excel.CurrentWorkbook(){[Name="tase"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"vana", type text}, {"uus", type text}})
+in
+    #"Changed Type1"
