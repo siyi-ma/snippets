@@ -1,0 +1,5 @@
+= Table.AddColumn(addRajaltMaas, "aruandeaasta", each let _month = Date.Month([immatkp]), _day = Date.Day([immatkp]), _year = Date.Year([immatkp]), 
+_value = if [tase]="BAK" then 3 else if [tase] ="MAG" then 2 else 0, 
+result1 = Number.ToText(_year+_value)&"/"&Text.End(Number.ToText(_year+_value+1), 2),
+result2 = Number.ToText(_year+_value+1)&"/"&Text.End(Number.ToText(_year+_value+2),2),
+result = if _month >= 11 and _day >=10 then result2 else result1 in result, type text)
