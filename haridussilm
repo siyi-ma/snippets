@@ -1,0 +1,18 @@
+let
+  Source = _folderHaridussilm,
+  Navigation = Source{[Name = "data_2006-2024.xlsx"]}[Content],
+  #"Imported Excel workbook" = Excel.Workbook(Navigation, true, true),
+  #"Navigation 1" = #"Imported Excel workbook"{[Item = "Export", Kind = "Sheet"]}[Data],
+  #"Renamed columns" = Table.RenameColumns(#"Navigation 1", {{"Rahastamise Allikas (RE REV)", "Rahastamise Allikas"}}),
+  #"Filtered rows" = Table.SelectRows(#"Renamed columns", each ([Õppeaasta] <> null and [Õppeaasta] <> "2006/07" and [Õppeaasta] <> "2007/08" and [Õppeaasta] <> "2008/09" and [Õppeaasta] <> "2009/10" and not Text.StartsWith( [Õppeaasta] , "Applied filters") and [Õppeaasta] <> "Total") and ([Õppetase] = "bakalaureuseõpe (3+2)" or [Õppetase] = "magistriõpe (3+2)" or [Õppetase]="rakenduskõrgharidusõpe")),
+  addKonkurent = Table.AddColumn(#"Filtered rows", "konkurent", each try if [Õppeasutus] = "Tallinna Tehnikaülikool" then 2 else if List.Contains(List.Buffer(_list_ehisKonkurentUus), [#"Õppekava Kood"]) then 1 else 0 otherwise null, Int64.Type),
+  filterKonkurent = Table.SelectRows(addKonkurent, each ([konkurent] >= 1)),
+  #"Changed column type" = Table.TransformColumnTypes(filterKonkurent, {{"Õppeaasta", type text}, {"Õppeasutus", type text}, {"Õppetase", type text}, {"Õppekava Kood", type text}, {"Õppekava Nimetus", type text}, {"Rahastamise Allikas", type text}, {"Õppurite arv", Int64.Type}, {"Vastuvõetute arv", Int64.Type}, {"Lõpetajate arv", Int64.Type}, {"Õppesuund", type text}, {"Õppekavarühm", type text}, {"Nominaalkestus", Int64.Type}, {"Õppevaldkond", type text}, {"Sugu", type text}, {"Välisüliõpilased", type text}, {"Õppekeel", type text}}),
+  #"Replaced value" = Table.ReplaceValue(#"Changed column type", 0, null, Replacer.ReplaceValue, {"Vastuvõetute arv"}),
+  cleanOppetase = Table.TransformColumns(#"Replaced value", {{"Õppetase", each Text.Upper(Text.Start(_, 3)), type text}}),
+  #"Trimmed text" = Table.TransformColumns(cleanOppetase, {{"Õppekava Kood", each Text.Clean(Text.Trim(_)), type nullable text}}),
+  #"Extracted text before delimiter" = Table.TransformColumns(#"Trimmed text", {{"Õppekeel", each Text.BeforeDelimiter(_, " keel", 0), type text}}),
+  #"Extracted first characters" = Table.TransformColumns(#"Extracted text before delimiter", {{"Välisüliõpilased", each Text.Start(_, 5), type text}}),
+  #"Extracted first characters 1" = Table.TransformColumns(#"Extracted first characters", {{"Sugu", each Text.Start(_, 1), type text}})
+in
+  #"Extracted first characters 1"
