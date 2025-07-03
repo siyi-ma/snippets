@@ -1,0 +1,16 @@
+sp=r&st=2025-03-05T21:49:58Z&se=2025-03-06T05:49:58Z&spr=https&sv=2022-11-02&sr=c&sig=zbEnFaQxFKflT9qwze%2FfhyGU4IYTgLYoTMo1NFhxarQ%3D
+
+https://ga4maj.blob.core.windows.net/googlesheet?sp=r&st=2025-03-05T21:49:58Z&se=2025-03-06T05:49:58Z&spr=https&sv=2022-11-02&sr=c&sig=zbEnFaQxFKflT9qwze%2FfhyGU4IYTgLYoTMo1NFhxarQ%3D
+
+21389569521-uqimps2rgjbor50vtngd92a34tkt3dar.apps.googleusercontent.com
+
+2023 Siseriiklik kvalifitseeruv = [2023 kvalifitseeruv]-[2023 Rahvusvaheline kvalifitseeruv]
+2024 Siseriiklik kvalifitseeruv = [2024 kvalifitseeruv]-[2024 Rahvusvaheline kvalifitseeruv]
+2025 Siseriiklik kvalifitseeruv = if( [2024 kvalifitseeruv]=""; blank(); [2024 kvalifitseeruv] - [2024 Rahvusvaheline kvalifitseeruv])
+
+
+kumulatiivne kvalifitseeruv = 
+VAR taselen = LEN(SELECTEDVALUE(dim_ga4kavaTase[ga4tase], ISFILTERED(dim_ga4kavaTase[kava])))
+VAR tkresult = IF(taselen = 6, [SAIS kvalifitseeruv], IF(taselen = 5, [DA kvalifitseeruv]))
+VAR result = IF(ISFILTERED(dim_ga4kavaTase[ga4tase]) || ISFILTERED(dim_ga4kavaTase[kava]), tkresult, sum(fakt_kvalifitseeruv_SAISnDA[Value]))
+RETURN result
