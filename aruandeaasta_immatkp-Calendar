@@ -1,0 +1,98 @@
+= Table.AddColumn(addRajaltMaas, "aruandeaasta", each let _month = Date.Month([immatkp]), _day = Date.Day([immatkp]), _year = Date.Year([immatkp]), 
+_value = if [tase]="BAK" then 3 else if [tase] ="MAG" then 2 else 0, 
+result1 = Number.ToText(_year+_value)&"/"&Text.End(Number.ToText(_year+_value+1), 2),
+result2 = Number.ToText(_year+_value+1)&"/"&Text.End(Number.ToText(_year+_value+2),2),
+result = if _month >= 11 and _day >=10 then result2 else result1 in result, type text)
+
+
+"semester", 
+
+VAR CY = YEAR('Calendar'[Date])
+VAR  PY = YEAR('Calendar'[Date])-1
+VAR semester =  IF(
+	MONTH('Calendar'[Date])>=9,
+	RIGHT(CY, 2)&"S",
+	IF(
+		MONTH('Calendar'[Date])=1,
+		RIGHT(PY, 2)&"S",
+		RIGHT(CY,  2)&"K"
+		)
+	)
+RETURN  semester
+
+aruanneAasta = 
+ Table.AddColumn(#"Added Custom", "aruanneAasta", each let aastaNum = Number.FromText(Text.Middle([õppeaasta],2,2)), 
+nomPlus1 = if Text.Start([õppetase],3)="bak" then 4 else 3, 
+aruanneAastaP1 = aastaNum + nomPlus1,  aruanneAastaP2=aruanneAastaP1+1, 
+P1 = "20"&Number.ToText(aruanneAastaP1), P2 = Number.ToText(aruanneAastaP2),  result = P1&"/"&P2  in result, type text)
+
+semester = let 
+_month = Date.Month([date]), 
+CY= Date.Year([date]), NY = CY+1, PY = CY-1, 
+_CY = Text.End(Number.ToText(CY),2),
+_NY = Number.ToText(NY), 
+_PY = Text.End(Number.ToText(PY),2),
+result = if _month >=9 then _CY&"S" else if _month = 1 then _PY&"S" else _CY&"K" in result, type text)
+
+oppeaasta = let 
+_month = Date.Month([kp]), 
+CY= Date.Year([kp]), NY = CY+1, PY = CY-1, 
+_CY = Number.ToText(CY), 
+_NY = Number.ToText(NY), 
+_PY = Number.ToText(PY),
+result = if _month >=9 then _CY&"/"&Text.End(_NY,2) else _PY&"/"&Text.End(_CY,2) in result, type text)
+
+"oppeaasta", 
+
+VAR CY = YEAR('Calendar'[Date])  // CY = current year
+VAR NY = YEAR('Calendar'[Date]) + 1  // NY = next year
+VAR PY = YEAR('Calendar'[Date]) - 1  // PY = previous year
+VAR AcademicYear = IF(
+	MONTH('Calendar'[Date]) >= 9, 
+	CY & "/" & RIGHT(NY, 2), 
+	PY & "/"& right(CY, 2)
+	)
+RETURN AcademicYear
+
+
+Selected_semester = 
+VAR _distinct_value_count = DISTINCTCOUNT('Calendar'[semester])
+VAR _max_values2show = 5 
+VAR result
+IF (
+_distinct_value_count > _max_values2show,
+CONCATENATE(
+CONCATENATEX(
+TOPN( _max_values2show, VALUES('Calendar'[semester]), 'Calendar'[semester], ASC),
+'Calendar'[semester],
+", ",
+'Calendar'[semester],
+ASC
+),
+" jne. "
+),
+CONCATENATEX(VALUES('Calendar'[semester]),'Calendar'[semester], ", ", 'Calendar'[semester], ASC)
+)
+
+RETURN  result
+
+Selected_kava = 
+VAR _distinct_value_count = DISTINCTCOUNT(rls_PJ[kood])
+VAR _max_values2show = 5
+VAR result
+IF(
+_distinct_value_count > _max_values2show, 
+CONCATENATE(
+     CONCATENATEX(
+          TOPN( _max_values2show, VALUES(rls_PJ[kood]), rls_PJ[kood], ASC), 
+          kava[kava], 
+          ", ", 
+          kava[kava],
+          ASC
+          ),
+     " jne. "
+     ),
+     CONCATENATEX(VALUES(rls_PJ[kood]), rls_PJ[kood], ", ", rls_PJ[kood], ASC)
+)
+
+RETURN result
