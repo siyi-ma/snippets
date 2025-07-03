@@ -1,0 +1,16 @@
+ETIS_isik
+
+Web scraping JSON
+
+{"_id":"ETIS_isik","startUrl":["https://www.etis.ee/Portal/Persons/Index/?2=1__AND__1f189909-1ff3-4c08-be38-86b811dacb7f","https://www.etis.ee/Portal/Persons/Index/?2=2__AND__1f189909-1ff3-4c08-be38-86b811dacb7f"],"selectors":[{"id":"page","paginationType":"auto","parentSelectors":["_root","page"],"selector":".pagination-pages span.page-link","type":"SelectorPagination"},{"id":"eng","linkType":"linkFromHref","multiple":true,"parentSelectors":["_root","page"],"selector":".pivoted a:nth-of-type(2)","type":"SelectorLink"},{"id":"nimi","multiple":false,"parentSelectors":["eng"],"regex":"","selector":"h2","type":"SelectorText"},{"id":"awards","multiple":false,"parentSelectors":["eng"],"regex":"","selector":"div:nth-of-type(4) div.display-section","type":"SelectorText"},{"id":"sections","multiple":false,"parentSelectors":["eng"],"regex":"","selector":".display-section-navs ul","type":"SelectorText"},{"id":"awards_","multiple":false,"parentSelectors":["eng"],"regex":"","selector":"div.display-border-bottom:nth-of-type(2)","type":"SelectorText"},{"id":"kontakt","multiple":false,"parentSelectors":["eng"],"regex":"","selector":"ul.list-inline","type":"SelectorText"},{"id":"born","multiple":false,"parentSelectors":["eng"],"regex":"","selector":"p.text-gray500","type":"SelectorText"}]}
+
+PQ
+
+let
+    Source = Csv.Document(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\ETIS\ETIS_isik.csv"),[Delimiter=",", Columns=11, Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+    #"Removed Other Columns" = Table.SelectColumns(Source,{"Column5", "Column6", "Column8", "Column7", "Column9", "Column10", "Column11"}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Other Columns", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.Distinct(
+ Table.TransformColumnTypes(#"Promoted Headers",{{"eng-href", type text}, {"nimi", type text}, {"sections", type text}, {"awards", type text}, {"awards_", type text}}))
+in
+    #"Changed Type"
