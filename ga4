@@ -1,0 +1,202 @@
+
+
+OVER (event_name IN ("GA4_apply_here","GA4_Kandideeri_SAIS-is")
+
+The count of conversion events. Events are marked as conversions at collection time; changes to an event's conversion marking apply going forward. You can mark any event as a conversion in Google Analytics, and some events (i.e. first_open, purchase) are marked as conversions by default. To learn more, see <https://support.google.com/analytics/answer/9267568>. 
+
+taltechmaj.analytics_283317612.events_20240526
+=IF(COUNTA($AR$21:$AR$25)=1;
+IFERROR(GETPIVOTDATA("[Measures].["&AB$3&"]";$AA$21;"[dim_instituut].[instituut]";"[dim_instituut].[instituut].&["&$AR$21&"]";"[dim_eksmataasta].[eksmatAasta]";"[dim_eksmataasta].[eksmatAasta].&["&$AA4&"]");"");
+IFERROR(GETPIVOTDATA("[Measures].["&AB$3&"]";$AA$21;"[dim_eksmataasta].[eksmatAasta]";"[dim_eksmataasta].[eksmatAasta].&["&$AA4&"]");""))
+
+
+
+dim_kava
+let
+  Source = fakt_GA4,
+  #"Removed other columns" = Table.Distinct( Table.SelectColumns(Source, {"kava"})),
+  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Removed other columns", "tase", each if Text.Middle([kava], 3, 1)="B" then "BAK" else "MAG"), {{"tase", type text}})
+in
+  #"Added custom"
+
+TalTech new - GA4
+let
+  Source = GoogleAnalytics.Accounts([Implementation = "2.0"]),
+  #"Navigation 1" = Source{[Id = "accounts/6675762"]}[Data],
+  #"Navigation 2" = #"Navigation 1"{[Id = "properties/283317612"]}[Data],
+  #"TalTech new - GA4" = #"Navigation 2"{[Id = "properties/283317612"]}[Data],
+  #"Added items" = Cube.Transform(#"TalTech new - GA4", {{Cube.AddMeasureColumn, "activeUsers", "activeUsers"}, {Cube.AddMeasureColumn, "averageSessionDuration", "averageSessionDuration"}, {Cube.AddMeasureColumn, "engagedSessions", "engagedSessions"}, {Cube.AddMeasureColumn, "sessions", "sessions"}, {Cube.AddMeasureColumn, "screenPageViews", "screenPageViews"}, {Cube.AddAndExpandDimensionColumn, "date", {"date"}, {"date"}}, {Cube.AddAndExpandDimensionColumn, "pageLocation", {"pageLocation"}, {"pageLocation"}}}),
+  #"Filtered rows" = Table.SelectRows(#"Added items", each ([pageLocation] <> "")),
+  #"Added custom" = Table.TransformColumnTypes(Table.AddColumn(#"Filtered rows", "kava", 
+  each if Text.EndsWith([pageLocation], "/masters-programmes/international-business-administration") then "TVTMen" 
+  else if Text.EndsWith([pageLocation], "/masters-programmes/entrepreneurial-management-mba") then "MAEMen" 
+  else if Text.EndsWith([pageLocation], "/masters-programmes/law") then "HAJMen" 
+  else if Text.EndsWith([pageLocation], "/masters-programmes/technology-governance-and-sustainability") then "HAGM" 
+  else if Text.EndsWith([pageLocation], "/avaliku-sektori-juhtimine-ja-innovatsioon") then "HAAM" 
+  else if Text.EndsWith([pageLocation], "/ettevotlik-juhtimine") then "MAEM" 
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/juhtimine-ja-turundus") then "TATM" 
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/majandusanaluus") then "TAAM" 
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/personalijuhtimine") then "HAPM"
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/rahvusvaheline-arikorraldus") then "TVTM"
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng") then "HAGM"
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/oigusteadus") then "HAJM"
+  else if Text.EndsWith([pageLocation], "/magistrioppe-erialad/arirahandus-ja-majandusarvestus") then "TARM"
+  else if Text.EndsWith([pageLocation], "/bakalaureuseoppe-erialad/avalik-haldus-ja-riigiteadused") then "HAAB" 
+  else if Text.EndsWith([pageLocation], "/bakalaureuseoppe-erialad/jatkusuutlik-ettevotlus-ja-ringmajandus") then "MAJB" 
+  else if Text.EndsWith([pageLocation], "/bakalaureuseoppe-erialad/rahvusvaheline-arikorraldus") then "TVTB" 
+  else if Text.EndsWith([pageLocation], "/bakalaureuseoppe-erialad/rakenduslik-majandusteadus") then "TAAB" 
+  else if Text.EndsWith([pageLocation], "/bakalaureuseoppe-erialad/arindus") then "TABB" 
+  else if Text.EndsWith([pageLocation], "/bachelors-programmes/international-business-administration") then "TVTBen" 
+  else if Text.EndsWith([pageLocation], "/bachelors-programmes/law") then "HAJBen" 
+  else if Text.EndsWith([pageLocation], "https://taltech.ee/oigusteadus") then "HAJB"  else "NA"), {{"kava", type text}}),
+  #"Filtered rows 1" = Table.SelectRows(#"Added custom", each ([kava] <> "NA"))
+in
+  #"Filtered rows 1"
+
+M_MAtase = 
+case 
+WHEN ENDS_With(M_MAG_kava, "en") then "MAen"
+else "MA_et"
+end
+
+M_MAG_kava = 
+case 
+when ENDS_WITH(Page location, "/masters-programmes/international-business-administration") then "TVTMen" 
+when ENDS_WITH(Page location, "/masters-programmes/entrepreneurial-management-mba") then "MAEMen" 
+when ENDS_WITH(Page location, "/masters-programmes/law") then "HAJMen" 
+when ENDS_WITH(Page location, "/masters-programmes/technology-governance-and-sustainability") then "HAGM" 
+when ENDS_WITH(Page location, "/avaliku-sektori-juhtimine-ja-innovatsioon") then "HAAM" 
+when ENDS_WITH(Page location, "/ettevotlik-juhtimine") then "MAEM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/juhtimine-ja-turundus") then "TATM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/majandusanaluus") then "TAAM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/personalijuhtimine") then "HAPM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/rahvusvaheline-arikorraldus") then "TVTM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng") then "HAGM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/oigusteadus") then "HAJM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/arirahandus-ja-majandusarvestus") then "TARM"
+When ENDS_WITH(Page location, "/masters-programmes/technology-governance-and-sustainability" then "HAGMen"
+else "NA" end
+
+M_BAtase = 
+case 
+WHEN ENDS_With(M_BAK_kava, "en") then "BAen"
+else "BA_et"
+end
+
+M_BAK_kava =
+case 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/avalik-haldus-ja-riigiteadused") then "HAAB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/jatkusuutlik-ettevotlus-ja-ringmajandus") then "MAJB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/rahvusvaheline-arikorraldus") then "TVTB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/rakenduslik-majandusteadus") then "TAAB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/arindus") then "TABB" 
+when ENDS_WITH(Page location, "/bachelors-programmes/international-business-administration") then "TVTBen" 
+when ENDS_WITH(Page location, "/bachelors-programmes/law") then "HAJBen" 
+else "NA" end
+
+M_BMtase = 
+case
+when SUBSTR(M_kava, 4, 1)="B" and  ENDS_WITH(M_kava, "en") then "BAen"
+when SUBSTR(M_kava, 4, 1)="M" and  ENDS_WITH(M_kava, "en") then "MAen"
+when LENGTH(M_kava)=4 and SUBSTR(M_kava, 4, 1)="B" then "BA_et"
+when LENGTH(M_kava)=4 and SUBSTR(M_kava, 4, 1)="M" then "MA_et"
+else "NA" end
+
+
+M_kava
+case 
+when ENDS_WITH(Page location, "/masters-programmes/international-business-administration") then "TVTMen" 
+when ENDS_WITH(Page location, "/masters-programmes/entrepreneurial-management-mba") then "MAEMen" 
+when ENDS_WITH(Page location, "/masters-programmes/law") then "HAJMen" 
+when ENDS_WITH(Page location, "/masters-programmes/technology-governance-and-sustainability") then "HAGM" 
+when ENDS_WITH(Page location, "/avaliku-sektori-juhtimine-ja-innovatsioon") then "HAAM" 
+when ENDS_WITH(Page location, "/ettevotlik-juhtimine") then "MAEM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/juhtimine-ja-turundus") then "TATM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/majandusanaluus") then "TAAM" 
+when ENDS_WITH(Page location, "/magistrioppe-erialad/personalijuhtimine") then "HAPM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/rahvusvaheline-arikorraldus") then "TVTM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng") then "HAGM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/oigusteadus") then "HAJM"
+when ENDS_WITH(Page location, "/magistrioppe-erialad/arirahandus-ja-majandusarvestus") then "TARM"
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/avalik-haldus-ja-riigiteadused") then "HAAB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/jatkusuutlik-ettevotlus-ja-ringmajandus") then "MAJB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/rahvusvaheline-arikorraldus") then "TVTB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/rakenduslik-majandusteadus") then "TAAB" 
+when ENDS_WITH(Page location, "/bakalaureuseoppe-erialad/arindus") then "TABB" 
+when ENDS_WITH(Page location, "/bachelors-programmes/international-business-administration") then "TVTBen" 
+when ENDS_WITH(Page location, "/bachelors-programmes/law") then "HAJBen" 
+when ENDS_WITH(Page location, "https://taltech.ee/oigusteadus" then "HAJB"
+When ENDS_WITH(Page location, "/masters-programmes/technology-governance-and-sustainability" then "HAGMen"
+else "NA" end
+
+https://ga-dev-tools.google/ga4/dimensions-metrics-explorer/#audienceName
+
+Majandusteaduskonna dekanaat 
+9.12.2023 publication
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\M teadus\2022_publikatsioonid_ETIS_1.1\Publications_ETIS_1.1_2020-13.11.2023.xlsx"), null, true),
+    _workSheetName_Sheet = Source{[Item="_workSheetName",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(_workSheetName_Sheet, [PromoteAllScalars=true]),
+    #"Removed Columns1" = Table.RemoveColumns(#"Promoted Headers",{"GUID", "Publikatsiooni tüüp", "ISBN", "Pealkiri", "Autorid", "DOI", "Staatus"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Removed Columns1",{{"Ajakiri / jätkuväljaanne", type text}, {"Lühikirje", type text}, {"Aasta", Int64.Type}, {"Autorid, kellel on ETISe konto", type text}, {"ISSN", type text}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each ([ISSN] <> null)),
+    #"Trimmed Text" = Table.TransformColumns(#"Filtered Rows",{{"ISSN", Text.Trim, type text}}),
+    cleanISSN = Table.AddColumn(#"Trimmed Text", "cleanISSN", each
+    let _length = Text.Length([ISSN]), 
+    _length37 = Text.Replace(Text.Replace([ISSN], " (print)", ""), " (online)", ""),
+    _length5678 = Text.Repeat("0", 8-_length)& Text.Range([ISSN], 0, _length-4) & "-" &Text.End([ISSN],4),
+    _length18 = Text.Start([ISSN],4)&"-"&Text.Range([ISSN],4,4)&"; "&Text.Range([ISSN], 10, 4)&"-"&Text.End([ISSN],4), 
+    _length19 = Text.Start([ISSN],9)&"; "&Text.End([ISSN],9),
+    _length10 = Text.Remove(Text.Remove([ISSN], ","), ";"),
+    result = if _length = 9 then [ISSN] else if _length = 20 then [ISSN] else if _length <=8 then _length5678 else 
+    if _length =10 then _length10 else if _length = 37 then _length37 else 
+    if _length = 18 then _length18 else if _length = 19 then _length19 else ""  in result , type text),
+    #"Split Column by Delimiter" = Table.SplitColumn(cleanISSN, "cleanISSN", Splitter.SplitTextByDelimiter("; ", QuoteStyle.None), {"cleanISSN", "eISSN"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"cleanISSN", type text}, {"eISSN", type text}})
+in
+    #"Changed Type1"
+
+
+Table.Group(Source, {"Journal name", "JCR Abbreviation", "ISSN", "eISSN", "2022 JIF", "5 Year JIF"}, {{"Wos Category", each 
+Text.Combine(List.Transform(
+Table.Distinct(Table.CombineColumns(_, {"Category", "Citation Indexes"}, Combiner.CombineTextByDelimiter(" - ", QuoteStyle.None), "custom"))[custom], Text.From), "; "), type text
+}})
+
+
+data 
+let
+    Source = ClarivateJournalCitationReportsCategoryGroups, 
+    addKey = fnJournalkey(Source),
+    addFT50 = Table.AddColumn(addKey, "FT50", each let list0 = List.Buffer(ft_stage[journalkey]),
+lengthlist = List.Buffer(ft_stage[length]),
+length = try lengthlist{List.PositionOf(list0, [journalkey])} otherwise 0 ,
+result = if length = 0 then "null" else if length <=2 then "FT50" else "FT50+" in result, type text),
+    addTuumik= Table.AddColumn(addFT50, "tuumik", (_)=> Table.RowCount(
+Table.SelectRows(tuumik,
+(check)=> Text.Contains([Category], check[Column1], Comparer.OrdinalIgnoreCase))), Int64.Type),
+    Custom1 = Table.AddColumn( addTuumik, "2021 JIF", each let list0 = List.Buffer(JIF2021[ISSN]), list1 = List.Buffer(JIF2021[#"2021 JIF"]), list00 = List.Buffer(JIF2021[eISSN]),
+result1 = try list1 {List.PositionOf(list0, [ISSN])} otherwise null, 
+result2 = try list1 {List.PositionOf(list00, [eISSN])} otherwise null, 
+result = if [ISSN]="N/A" then result2 else result1 
+ in result, Int64.Type),
+    Custom2 = Table.AddColumn( Custom1, "5 Year JIF 2021", each let list0 = List.Buffer(JIF2021[ISSN]), list1 = List.Buffer(JIF2021[#"5 Year JIF"]), list00 = List.Buffer(JIF2021[eISSN]),
+result1 = try list1 {List.PositionOf(list0, [ISSN])} otherwise null, 
+result2 = try list1 {List.PositionOf(list00, [eISSN])} otherwise null, 
+result = if [ISSN]="N/A" then result2 else result1  in result, Int64.Type),
+    #"Merged Queries" = Table.NestedJoin(Custom2, {"ISSN"}, publication, {"ISSN"}, "publication", JoinKind.LeftOuter),
+    #"Added Custom" = Table.AddColumn(#"Merged Queries", "PubCount", each Table.RowCount([publication]), Int64.Type)
+in
+    #"Added Custom"
+
+
+publication 
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\M teadus\2022_publikatsioonid_ETIS_1.1\Publications_2018-11.09.2023.xlsx"), null, true),
+    _workSheetName_Sheet = Source{[Item="_workSheetName",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(_workSheetName_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"GUID", type text}, {"Lühikirje", type text}, {"Aasta", Int64.Type}, {"Autorid, kellel on ETISe konto", type text}, {"Autorid", type text}, {"Pealkiri", type text}, {"Ajakiri / jätkuväljaanne", type text}, {"ISSN", type text}, {"DOI", type text}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Changed Type", "ISSN", Splitter.SplitTextByDelimiter("; ", QuoteStyle.None), {"ISSN", "eISSN"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"ISSN", type text}, {"eISSN", type text}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type1", each ([Aasta] >= 2020))
+in
+    #"Filtered Rows"
