@@ -1,0 +1,406 @@
+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
+
+Custom = Table.AddColumn("Custom", each Excel.Workbook(Source{[Item="Worksheet",Kind="Sheet"]})[Data])
+   
+let
+    Source = source_mAdmin, 
+    #"A_Õppetegevuse failid" = Source{[Name="Statistika õppetöö"]}[Content],
+    #"hinnete_jaotused_Siyi xlsx" = #"A_Õppetegevuse failid"{[Name="hinnete_jaotused_Siyi.xlsx"]}[Content],
+    #"Imported Excel Workbook" = Excel.Workbook(#"hinnete_jaotused_Siyi xlsx"),
+    data_Table = #"Imported Excel Workbook"{[Item="data",Kind="Table"]}[Data]
+in
+    data_Table
+
+dimJIF = 
+let
+   Source = SharePoint.Files("https://livettu.sharepoint.com/sites/M_Dashboard", [ApiVersion = 15]),
+    #"JIF2021 xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/WosJIF/" = Source{[Name="JIF2021.xlsx",#"Folder Path"="https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/WosJIF/"]}[Content],
+    #"Imported Excel" = Excel.Workbook(#"JIF2021 xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/WosJIF/"),
+    Merge_Table = #"Imported Excel"{[Item="Merge",Kind="Table"]}[Data]
+in
+    Merge_Table
+
+ETIS2022 =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_Dashboard", [ApiVersion = 15]),
+    #"Publications xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1 1/" = Source{[Name="Publications.xlsx",#"Folder Path"="https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1.1/"]}[Content],
+    #"Imported Excel" = Excel.Workbook(#"Publications xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1 1/"),
+    _workSheetName_Sheet = #"Imported Excel"{[Item="_workSheetName",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(_workSheetName_Sheet, [PromoteAllScalars=true]),
+    Custom1 = Table.SelectColumns(#"Promoted Headers", list_publication),
+    #"Removed Columns" = Table.RemoveColumns(Custom1,{"Staatus"}),
+    Custom2 = Table.RenameColumns(#"Removed Columns",{{"Autorid, kellel on ETISe konto", "autorid ETISe kontoga"}})
+in
+    Custom2
+
+viimaneKP =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_Dashboard", [ApiVersion = 15]),
+    #"Publications.xlsx_https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1.1/" = Source{[Name="Publications.xlsx",#"Folder Path"="https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1.1/"]}[#"Date modified"],
+    #"Extracted Date" = Date.From(#"Publications.xlsx_https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/2022_publikatsioonid_ETIS_1.1/")
+in
+    #"Extracted Date"
+
+
+dekl_erasmus
+let
+    Source = dekl_koond,
+    #"Filtered Rows" = Table.SelectRows(Source, each ([õppekava kood] = "külalisõppur" or [õppekava kood] = "külalisüliõpilane")),
+    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows",{"Õppeaine nimetus", "Ainekood", "Õppesemester", "dekl_arv"}),
+    #"Merged Queries" = Table.NestedJoin(#"Removed Other Columns",{"Ainekood"},kavaKoond,{"Kood"},"kavaKoond",JoinKind.LeftOuter),
+    #"Expanded kavaKoond" = Table.ExpandTableColumn(#"Merged Queries", "kavaKoond", {"kavaKoond"}, {"kavaKoond.1"}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Expanded kavaKoond", "kavaKoond.1", Splitter.SplitTextByDelimiter(",", QuoteStyle.Csv), {"kavaKoond.1.1", "kavaKoond.1.2", "kavaKoond.1.3", "kavaKoond.1.4", "kavaKoond.1.5", "kavaKoond.1.6"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"kavaKoond.1.1", type text}, {"kavaKoond.1.2", type text}, {"kavaKoond.1.3", type text}, {"kavaKoond.1.4", type text}, {"kavaKoond.1.5", type text}, {"kavaKoond.1.6", type text}}),
+    #"Unpivoted Columns" = Table.UnpivotOtherColumns(#"Changed Type", {"Õppeaine nimetus", "Ainekood", "Õppesemester", "dekl_arv"}, "Attribute", "kava"),
+    #"Removed Columns" = Table.RemoveColumns(#"Unpivoted Columns",{"Attribute"}),
+    #"Trimmed Text" = Table.TransformColumns(#"Removed Columns",{{"kava", Text.Trim, type text}})
+in
+    #"Trimmed Text"
+
+kavaKoond 
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\A_Õppetegevuse failid\Õppekavad\Õppekavades_ained.xlsx"), null, true),
+    kavaKoond_DefinedName = Source{[Item="kavaKoond",Kind="DefinedName"]}[Data],
+    #"Promoted Headers" = Table.SelectColumns(Table.PromoteHeaders(kavaKoond_DefinedName, [PromoteAllScalars=true]),
+{"Kood", "Õppeaine nimetus e.k", "kavaKoond", "EAP"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Kood", type text}, {"kavaKoond", type text}, {"Õppeaine nimetus e.k", type text}, {"EAP", Int64.Type}})
+in
+    #"Changed Type"
+
+
+faktETIS =
+let
+    Source = Table.Combine({ETIS2022, ETIS2021}),
+    Custom1 = fnKoormus(Source),
+    Custom2 = Table.AddColumn(Custom1, "ajakirikey", each let lower = Text.Lower([#"Ajakiri / jätkuväljaanne"]),
+replace = Text.Replace( lower, "and", ""),
+result = Text.Select(replace, {"a".."z"})
+in result, type text),
+    Custom3 = Table.AddColumn(Custom2, "JIFtable", each let _table = Table.AddIndexColumn(dimJIF, "index"), 
+position = List.PositionOf(List.Buffer(dimJIF[journalkey]), [ajakirikey]),
+result = Table.SelectRows(_table, each [index]=position) in result),
+    explandJIF = Table.ExpandTableColumn(Custom3, "JIFtable", {"jif", "WoS category", "FT50", "Q1", "tuumik"}, {"jif", "WoS category", "FT50", "Q1", "tuumik"}),
+    Custom4 = Table.AddColumn(explandJIF, "ers", (_)=> Table.RowCount(Table.SelectRows(ers,(check)=> Text.Contains([Pealkiri], check[ERS], Comparer.OrdinalIgnoreCase))), Int64.Type),
+    #"Changed Type" = Table.TransformColumnTypes(Custom4,{{"jif", type number}, {"WoS category", type text}, {"FT50", type text}, {"Q1", type text}, {"tuumik", Int64.Type}}),
+    addVana = Table.AddColumn(#"Changed Type", "uus", each let position = List.PositionOf(etis2022_vana, [GUID]),
+result = if [Aasta]=2022 then position else null
+in result, Int64.Type),
+    Custom5 = Table.AddColumn(addVana, "tunnustus", each let list0 = List.Buffer(tunnustus[GUID]), list1 = List.Buffer(tunnustus[tunnustus]),
+result = list1{List.PositionOf(list0, [GUID])} in result, type text)
+in
+    Custom5
+
+kylalis_dekl-arv = 
+let
+    Source = Table.SelectRows(Folder.Files("C:\Users\siyi.ma\OneDrive - TalTech\ÕIS\ÕIS päring"), 
+each Text.StartsWith([Name], "majandus dekl ained _kylalis_")),
+    #"Added Custom" = Table.AddColumn(Source, "Custom", each try Excel.Workbook([Content], true, true){[Item="Sheet1",Kind="Sheet"]}[Data] otherwise Excel.Workbook([Content], true, true){[Item="Export Worksheet",Kind="Sheet"]}[Data]),
+    selectCustom = Table.SelectColumns(#"Added Custom",{"Custom"}),
+    #"Expanded Custom" = Table.ExpandTableColumn(selectCustom, "Custom", {"Üliõpilaskood", "Teaduskond (üliõpilase teaduskond)", "Õppetase", "Riik", "Kooli nimetus", "Kooli nimetus inglise keeles", "Semester", "Ainekood"}, {"Üliõpilaskood", "Teaduskond (üliõpilase teaduskond)", "Õppetase", "Riik", "Kooli nimetus", "Kooli nimetus inglise keeles", "Semester", "Ainekood"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Custom",{{"Üliõpilaskood", type text}, {"Teaduskond (üliõpilase teaduskond)", type text}, {"Õppetase", type text}, {"Riik", type text}, {"Kooli nimetus", type text}, {"Kooli nimetus inglise keeles", type text}, {"Semester", type text}, {"Ainekood", type text}}),
+    addKylalisArvTeaduskond = Table.AddColumn(#"Changed Type", "kylalis asuv teaduskond", each Text.Middle([Üliõpilaskood],6,1), type text),
+    #"Merged Queries" = Table.NestedJoin(addKylalisArvTeaduskond,{"Ainekood"},kavaKoond,{"Kood"},"kavaKoond",JoinKind.LeftOuter),
+    #"Expanded kavaKoond" = Table.ExpandTableColumn(#"Merged Queries", "kavaKoond", {"Õppeaine nimetus e.k", "EAP", "kavaKoond"}, {"aine nimetus", "EAP", "kavaKoond"})
+in
+    #"Expanded kavaKoond"
+
+
+
+Kirs, Margit; Karo, Erkki; Ukrainski, Kadri (2022). 
+1502bb41-d59a-4670-a98f-03ef5766574c 
+
+Calendar = ADDCOLUMNS(
+CALENDAR(
+	FIRSTDATE('fact_table'[kuupäev]),
+	ASTDATE('fact_table'[kuupäev])
+),
+
+"semester", 
+
+VAR CY = YEAR('Calendar'[Date])
+VAR  PY = YEAR('Calendar'[Date])-1
+
+VAR semester =  IF(
+	MONTH('Calendar'[Date])>=9,
+	RIGHT(CY, 2)&"S",
+	IF(
+		MONTH('Calendar'[Date])=1,
+		RIGHT(PY, 2)&"S",
+		RIGHT(CY,  2)&"K"
+		)
+	)
+RETURN  semester
+
+
+"oppeaasta", 
+
+VAR CY = YEAR('Calendar'[Date])  // CY = current year
+VAR NY = YEAR('Calendar'[Date]) + 1  // NY = next year
+VAR PY = YEAR('Calendar'[Date]) - 1  // PY = previous year
+VAR AcademicYear = IF(
+	MONTH('Calendar'[Date]) >= 9, 
+	CY & "/" & RIGHT(NY, 2), 
+	PY & "/"& right(CY, 2)
+	)
+RETURN AcademicYear
+
+
+
+let
+    Source = Folder.Files("C:\Users\siyi.ma\OneDrive - TalTech\ÕIS\ÕIS päring"),
+    filterRows = Table.SelectRows(Source, each ([Name] = "20220228_MAJANDUS_DEKL.xlsx" or [Name] = "dekl_ained_oppekava_K20.xlsx" or [Name] = "majandus_dekl_arv_kava_instituut_2015_2019.xlsx" or Text.StartsWith([Name], "majandus_dekl_arv_oppekava_"))),
+    getXlsx = Table.SelectColumns(
+Table.AddColumn(filterRows, "Custom", each try Table.RenameColumns(
+Excel.Workbook([Content], true, true){0}[Data],
+{{"Dekl. Arv", "dekl_arv"}, {"Õppekava kood", "õppekava kood"}})
+otherwise Excel.Workbook([Content], true, true){0}[Data]),
+"Custom"),
+    table.Combine = Table.Combine(getXlsx[Custom]),
+    #"Changed Type" = Table.TransformColumnTypes(table.Combine,{{"Õppesemester", type text}, {"Ainekood", type text}, {"Õppeaine nimetus", type text}, {"Instituudi kood", type text}, {"Õppeaine EAP-d", Int64.Type}, {"õppekava kood", type text}, {"dekl_arv", Int64.Type}}),
+    #"Added Custom" = Table.AddColumn(#"Changed Type", "kokku EAP punktid", each [#"Õppeaine EAP-d"]*[dekl_arv], Int64.Type)
+in
+    #"Added Custom"
+
+
+addTimes = Table.AddColumn(addQS, "Times", each 
+let checkTable = Table.Buffer(TIMES),
+output = Table.SelectRows(checkTable, (check)=> Text.Contains([University], check[Name]))
+in output),
+    Custom1 = Table.AddColumn(addTimes, "SHR", each 
+let checkTable = Table.Buffer(SHR),
+output = Table.SelectRows(checkTable, (check)=> Text.Contains([University], check[Institution]))
+in output)
+
+
+{"_id":"digikogu_2022","startUrl":["https://digikogu.taltech.ee/et/Search/Items?pageIndex=[0-25]&ItemTypes=9&ItemTypes=8&ItemTypes=18&ItemTypes=19&Query[4]=&Query[5]=&Query[8]=Majandusteaduskond&Query[7]=&Query[7]=&YearFrom=2023&YearTo=2023&SortType=-47&Query[6]=&Query[9]="],"selectors":[{"id":"link","parentSelectors":["_root"],"type":"SelectorLink","selector":".list-group-item a","multiple":true},{"id":"autor","parentSelectors":["link"],"type":"SelectorText","selector":"div:nth-of-type(2) .col-md-9 div.col","multiple":false,"regex":""},{"id":"right","parentSelectors":["link"],"type":"SelectorGroup","selector":"div:nth-of-type(n+2) .col-md-9 div:nth-of-type(1) div","extractAttribute":""}]}
+
+spetsialiseerumise nimetus lõpetanul
+spetsialiseerumise nimetus
+
+Source = SharePoint.Files("https://livettu.sharepoint.com/sites/M_admin", [ApiVersion = 15]),
+navigate = Excel.Workbook(
+Source{[Name = "Lõputöö_hinded_alates2017.xlsx", 
+#"Folder Path" = "https://livettu.sharepoint.com/sites/M_admin/Shared Documents/A_Õppetegevuse failid/Kaitsmised, lõpetamine/Statistika Kaitsmised/"]}[Content])
+{[Item="data",Kind="Table"]}[Data]
+
+
+Table.AddColumn(#"Filtered Rows1", "autorid ETISe kontoga", each let 
+_table = Table.FromList(Text.Split([#"Autorid, kellel on ETISe konto"], "; ")),
+_transform = Table.TransformColumns(_table, 
+{"Column2", each Text.Replace(_, "(Autor)", "")}),
+_combineCol = Table.CombineColumns(_transform, {"Column2", "Column1"}, Combiner.CombineTextByDelimiter(" ", QuoteStyle.None), "nimi")[nimi],
+_extract = Text.Combine(List.Transform(_combineCol, Text.From), "; ")
+in _extract, type text)
+= Table.RemoveColumns(#"Added Custom3",{"Autorid, kellel on ETISe konto"})
+
+= Table.RenameColumns(#"Removed Columns",{{"Autorid, kellel on ETISe konto", "autorid ETISe kontoga"}})
+
+let
+    Source = Table.Combine({ETIS2022, ETIS2021}),
+    addKoormus = fn_koormus(Source),
+    addAjakirikey = Table.AddColumn(addInstituut, "ajakirikey", each let lower = Text.Lower([#"Ajakiri / jätkuväljaanne"]),
+replace = Text.Replace( lower, "and", ""),
+result = Text.Select(replace, {"a".."z"})
+in result, type text),
+    addJIF = Table.AddColumn(addAjakirikey, "JIF2021", each let
+list0 = List.Buffer(JIF[journalkey]),
+list1 = List.Buffer(JIF[jif]),
+result = try list1{List.PositionOf(list0,[ajakirikey]
+)} otherwise null
+in result, type number),
+    addAvailable = Table.AddColumn(addJIF, "jif_available", each let list = List.Buffer(JIF[journalkey]),
+result = List.PositionOf(list, [ajakirikey])
+in result, Int64.Type),
+    addQ1 = Table.AddColumn(addAvailable, "Q1", each let list = List.Buffer(Q1[journalkey]),
+position = List.PositionOf(list, [ajakirikey]),
+result = if position >=1 then "jah" else "ei"
+in result, type text),
+    addCategory = Table.AddColumn(addQ1, "WoS Category", each let
+list0 = List.Buffer(JIF[journalkey]),
+list1 = List.Buffer(JIF[WoS category]),
+result = try list1{List.PositionOf(list0,[ajakirikey]
+)} otherwise null
+in result, type text),
+    addTuumik = Table.AddColumn(addCategory, "kas tuumik", (_)=> Table.RowCount(
+Table.SelectRows(tuumik,
+(check)=> Text.Contains([WoS Category], check[Column1], Comparer.OrdinalIgnoreCase))), Int64.Type),
+    addFT50 = Table.AddColumn(addTuumik, "FT50", each let list = List.Buffer(FT50[journalkey]),
+position = List.PositionOf(list, [ajakirikey]),
+result = if position >=1 then "jah" else "ei"
+in result, type text),
+    Custom1 = Table.AddColumn(addFT50, "21 tunnustus", each let
+list0 = List.Buffer(tunnustus[DOI]),
+list1 = List.Buffer(tunnustus[Kommentaar]),
+result = try list1{List.PositionOf(list0,[DOI]
+)} & " 2021" otherwise null
+in result, type text)
+in
+    Custom1
+
+
+fnKoormus 
+= (Source as table)=>
+let
+    addCustom = Table.AddColumn(Source, "Custom", each let replace = List.Accumulate(
+List.Numbers(0, Table.RowCount(replace)),
+[#"autorid ETISe kontoga"],
+(state, current) =>
+Text.Replace(state, 
+replace[vana]{current},
+replace[uus]{current})),
+_split = Text.Split(replace, "(Autor)"),
+result = List.RemoveItems(List.Transform(_split, each Text.Select(Text.Lower(_), {"a".."z"})),{""}) 
+in result,type text),
+
+    extractValue = Table.TransformColumns(addCustom, {"Custom", each Text.Combine(List.Transform(_, Text.From), " "), type text}),
+
+    addPoData = Table.AddColumn(extractValue, "poData", 
+(_)=>  Table.SelectRows(
+Table.Buffer(PO_toohoive), 
+(check)=>
+Text.Contains([Custom], check[nimikey])), 
+type table),
+
+    autorInfo = Table.AddColumn(addPoData, "autorInfo", each 
+let _table= [poData],
+addInfo = Table.AddColumn(_table, "custom", each 
+let nimi = [nimi], 
+instituut = [instituut],
+ametinimetus = if Text.Start([ametinimetus],9)="doktorant" then [ametinimetus] else "" ,
+toohoive = Number.ToText([tööhõive]),
+result = nimi & " " & instituut & " " & ametinimetus & " " & toohoive in result),
+list = addInfo[custom],
+result = Text.Combine(List.Transform(list, Text.From), "#(lf)")
+in result, type text),
+clean = Table.RemoveColumns(autorInfo, {"Custom", "poData"})
+in
+    clean
+
+
+Table.AddColumn(addCategory, "kas tuumik", (_)=> Table.RowCount(
+Table.SelectRows(tuumik,
+(check)=> Text.Contains([WoS Category], check[Column1], Comparer.OrdinalIgnoreCase))), Int64.Type)
+
+let
+    Source = SharePoint.Files("https://livettu.sharepoint.com/sites/M_Dashboard", [ApiVersion = 15]),
+    #"ETIS_1 1_2021_tehtud xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/" = Source{[Name="ETIS_1.1_2021_tehtud.xlsx",#"Folder Path"="https://livettu.sharepoint.com/sites/M_Dashboard/Shared Documents/M teadus/"]}[Content],
+    #"Imported Excel" = Excel.Workbook(#"ETIS_1 1_2021_tehtud xlsx_https://livettu sharepoint com/sites/M_Dashboard/Shared Documents/M teadus/"),
+    #"ETIS 1 1  2021_Sheet" = #"Imported Excel"{[Item="ETIS 1.1. 2021",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(#"ETIS 1 1  2021_Sheet", [PromoteAllScalars=true])
+in
+    #"Promoted Headers"
+
+https://livettu.sharepoint.com/sites/M_admin/Shared Documents/T_tunnustamine/2022 valimised
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\M teadus\Scopus Q1 2019-2022.xlsx"), null, true),
+    #"(PO) Puudumiste aruanne_Sheet" = Source{[Item="Sheet0",Kind="Sheet"]}[Data],
+    #"Removed Top Rows" = Table.Skip(#"(PO) Puudumiste aruanne_Sheet",16),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Top Rows", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Title", type text}, {"Authors", type text}, {"Year", Int64.Type}, {"Scopus Source title", type text}, {"Source type", type text}, {"SNIP (publication year)", type any}, {"SNIP percentile (publication year) *", Int64.Type}, {"CiteScore (publication year)", type any}, {"CiteScore percentile (publication year) *", type any}, {"Citations", Int64.Type}, {"Reference", type text}, {"Abstract", type text}, {"DOI", type text}, {"Publication type", type text}, {"EID", type text}, {"Institutions""|", type text}, {"Sustainable Development Goals (2022)", type text}}),
+    #"Removed Other Columns" = Table.Distinct(Table.SelectColumns(#"Changed Type",{"Scopus Source title"})),
+    #"Replaced Value" = Table.ReplaceValue(#"Removed Other Columns","Corporate Governance (Bingley)","Corporate Governance",Replacer.ReplaceText,{"Scopus Source title"}),
+    #"Replaced Value1" = Table.ReplaceValue(#"Replaced Value","Sustainability (Switzerland)","Sustainability",Replacer.ReplaceText,{"Scopus Source title"}),
+    #"Filtered Rows" = Table.SelectRows(#"Replaced Value1", each ([Scopus Source title] <> null)),
+    #"Added Custom" = Table.AddColumn(#"Filtered Rows", "journalkey", each let replace = Text.Replace([Scopus Source title], "and", ""),
+title = Text.Lower(replace),
+result = Text.Select(title, {"a".."z"})
+in result, type text)
+in
+    #"Added Custom"
+
+
+Table.RemoveColumns(
+Table.AddColumn(expandOisTable, "test", each let 
+_table = Table.Buffer([dtable]),
+oistable = Table.Buffer (expandOisTable),
+_value = Number.Round(Text.Length(Text.From(Record.Field(_, "teema")))),
+_teema1 = Text.Lower(Text.Middle(Text.Select(Text.From(Record.Field(_, "teema")), List.Combine({{"A".."Z"},{"a".."z"},{" "}})), _value/2, _value/9)),
+_teema2 = Text.Lower(Text.Middle(Text.Select(Text.From(Record.Field(_, "teema")), List.Combine({{"A".."Z"},{"a".."z"},{" "}})), _value/10, _value/9)),
+_teema3 = Text.Lower(Text.Middle(Text.Select(Text.From(Record.Field(_, "teema")), List.Combine({{"A".."Z"},{"a".."z"},{" "}})), _value/5, _value/9)),
+nimi1 = Text.Lower(Text.Select([isiku perekonnanimi], List.Combine({{"A".."Z"},{"a".."z"},{" "}}))),
+nimi2 = Text.Lower(Text.Select([isiku eesnimi], List.Combine({{"A".."Z"},{"a".."z"},{" "}}))),
+_nimi = Text.BeforeDelimiter(Text.Combine({nimi1, nimi2}, " "), " "), // combine given and family name before compare with dtable autor //
+result1 = try Table.FindText(_table, _teema1){0} otherwise null,  // output Record //
+result2 = try Table.FindText(_table, _teema2){0} otherwise null,
+result3 = try Table.FindText(_table, _teema3){0} otherwise null,
+result4 = if result1 is null then result2 else result1,
+result5 = if result4 is null then result3 else result4,
+resultnimi = try Table.FindText(_table, _nimi){0} otherwise null,
+result = try if result5 is null then resultnimi else result5 otherwise null
+in result, type text),
+"dtable")
+
+addCustom = Table.AddColumn(Source, "custom", each let replace = List.Accumulate(
+List.Numbers(0, Table.RowCount(replace)-1),
+[#"Autorid, kellel on ETISe konto"],
+(state, current) =>
+Text.Replace(state, 
+replace[vana]{current},
+replace[uus]{current})),
+_split = Text.Split(replace, "(Autor)"),
+result = List.RemoveItems(List.Transform(_split, each Text.Select(Text.Lower(_), {"a".."z"})),{""}) 
+in result,type text)
+
+addCustom = Table.AddColumn(Source, "Custom", each 
+let _split = Text.Split([#"Autorid, kellel on ETISe konto"], "(Autor)"),
+_transform = List.RemoveItems(List.Transform(_split, each Text.Select(Text.Lower(_), {"a".."z"})),{""})
+in _transform
+),
+
+fnTable.FindText 
+
+
+
+let
+    add_ois_aasta_kuu = Table.AddColumn(Source, "ois_aasta_kuu", each Number.ToText(Date.Year([#"kaitsmise kuupäev"])) & "_" & Number.ToText(Date.Month([#"kaitsmise kuupäev"])), type text),
+    matchTables = Table.Group(add_ois_aasta_kuu, {"ois_aasta_kuu"}, {
+{"oisTable", each _, type table}, 
+{"digikoguTable", each 
+let text = _[ois_aasta_kuu]{0},
+result = Table.SelectRows(testDigikogu_aasta_kuu, each [digikogu_aasta_kuu] = text) in result, type table}}),
+    expandDigikoguTable = Table.ExpandTableColumn(matchTables, "digikoguTable", {"dtable"}, {"dtable"}),
+    expandedOisTable = Table.TransformColumnTypes(
+Table.ExpandTableColumn(expandDigikoguTable, "oisTable", {"isiku perekonnanimi", "isiku eesnimi", "komisjoni esimees", "üliõpilaskood", "spetsialiseerumise nimetus lõpetanul", "teema", "kaitsmise kuupäev", "kava"}, {"isiku perekonnanimi", "isiku eesnimi", "komisjoni esimees", "üliõpilaskood", "spetsialiseerumine", "teema", "kaitsmise kuupäev", "kava"}),
+{{"teema", type text}, {"üliõpilaskood", type text}, {"komisjoni esimees", type text},  {"isiku perekonnanimi", type text}, {"isiku eesnimi", type text}, {"kaitsmise kuupäev", type date}, {"kava", type text}}),
+    addKeel = Table.RemoveColumns(
+Table.AddColumn(expandedOisTable, "keel", each let _table = [dtable],
+oistable = Table.Buffer (expandedOisTable),
+_value = Number.Round(Text.Length(Text.From(Record.Field(_, "teema")))/2),
+_teema1 = Text.Lower(Text.Middle(Text.Select(Text.From(Record.Field(_, "teema")), List.Combine({{"A".."Z"},{"a".."z"},{" "}})), 89, 20)),
+_teema2 = Text.Lower(Text.Middle(Text.Select(Text.From(Record.Field(_, "teema")), List.Combine({{"A".."Z"},{"a".."z"},{" "}})), 19, 20)),
+_nimi = Text.From(Record.Field(_, "isiku perekonnanimi")), 
+result1 = Table.FindText(_table, _teema1)[keel]{0},  // problem remains if the pealkiri has unexpected punctuation mark or words order differs from teema//
+result2 = Table.FindText(_table, _teema2)[keel]{0},
+result3 = Table.FindText(_table, _nimi),
+result = try if result1 is null  then result2 else result1 otherwise null in result, type text),
+"dtable"),
+    addKeel_erisus = Table.AddColumn(addKeel, "keel erisus", 
+each let currentKava = Text.Middle([üliõpilaskood],6,4), 
+kavakeel = Table.SelectRows(kava_keel, each [kava]= currentKava)[keel]{0},
+result= try if [keel] is null then null else if [keel] = kavakeel then 0 else 1 otherwise null in result,  Int64.Type)
+in
+    addKeel_erisus
+
+
+addInfo = Table.AddColumn(_table, "custom", each 
+let nimi = [nimi], 
+instituut = [instituut],
+ametinimetus = if Text.Start([ametinimetus],9)="doktorant" then [ametinimetus] else "" ,
+toohoive = Number.ToText([tööhõive]),
+result = nimi & " " & instituut & " " & ametinimetus & " " & toohoive in result),
+result = addInfo[custom],
+result1 = Text.Combine(List.Transform(result, Text.From), "#(lf)")
+in result1, type text),
+{"Custom", "poData"})
+in
+    autorInfo
+
+
+Table.AddColumn(#"Added Custom", "instituut", each if [InstitutionId] = 1312 then "ME" else if [InstitutionId]=1313 then "MN" else if [InstitutionId] = 1314 then "MO" else if [InstitutionId] = 1315 then "MM" else "NA", type text)
+
+Table.TransformColumns(addCustom, {"Custom", each Text.Combine(List.Transform(_, Text.From), " "), type text})
+
+Table.CombineColumns(changeType,{"First Name", "Last Name"},Combiner.CombineTextByDelimiter(" ", QuoteStyle.None),"nimi")
+
+Table.TransformColumns(#"Added Custom", {"autorInfo", each Text.Combine(List.Transform(_, Text.From), " | "&"#(lf)"), type text})
