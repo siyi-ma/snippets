@@ -1,0 +1,69 @@
+Majandusteaduskonna dekanaat 
+9.12.2023 publication
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\M teadus\2022_publikatsioonid_ETIS_1.1\Publications_ETIS_1.1_2020-13.11.2023.xlsx"), null, true),
+    _workSheetName_Sheet = Source{[Item="_workSheetName",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(_workSheetName_Sheet, [PromoteAllScalars=true]),
+    #"Removed Columns1" = Table.RemoveColumns(#"Promoted Headers",{"GUID", "Publikatsiooni tüüp", "ISBN", "Pealkiri", "Autorid", "DOI", "Staatus"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Removed Columns1",{{"Ajakiri / jätkuväljaanne", type text}, {"Lühikirje", type text}, {"Aasta", Int64.Type}, {"Autorid, kellel on ETISe konto", type text}, {"ISSN", type text}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each ([ISSN] <> null)),
+    #"Trimmed Text" = Table.TransformColumns(#"Filtered Rows",{{"ISSN", Text.Trim, type text}}),
+    cleanISSN = Table.AddColumn(#"Trimmed Text", "cleanISSN", each
+    let _length = Text.Length([ISSN]), 
+    _length37 = Text.Replace(Text.Replace([ISSN], " (print)", ""), " (online)", ""),
+    _length5678 = Text.Repeat("0", 8-_length)& Text.Range([ISSN], 0, _length-4) & "-" &Text.End([ISSN],4),
+    _length18 = Text.Start([ISSN],4)&"-"&Text.Range([ISSN],4,4)&"; "&Text.Range([ISSN], 10, 4)&"-"&Text.End([ISSN],4), 
+    _length19 = Text.Start([ISSN],9)&"; "&Text.End([ISSN],9),
+    _length10 = Text.Remove(Text.Remove([ISSN], ","), ";"),
+    result = if _length = 9 then [ISSN] else if _length = 20 then [ISSN] else if _length <=8 then _length5678 else 
+    if _length =10 then _length10 else if _length = 37 then _length37 else 
+    if _length = 18 then _length18 else if _length = 19 then _length19 else ""  in result , type text),
+    #"Split Column by Delimiter" = Table.SplitColumn(cleanISSN, "cleanISSN", Splitter.SplitTextByDelimiter("; ", QuoteStyle.None), {"cleanISSN", "eISSN"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"cleanISSN", type text}, {"eISSN", type text}})
+in
+    #"Changed Type1"
+
+
+Table.Group(Source, {"Journal name", "JCR Abbreviation", "ISSN", "eISSN", "2022 JIF", "5 Year JIF"}, {{"Wos Category", each 
+Text.Combine(List.Transform(
+Table.Distinct(Table.CombineColumns(_, {"Category", "Citation Indexes"}, Combiner.CombineTextByDelimiter(" - ", QuoteStyle.None), "custom"))[custom], Text.From), "; "), type text
+}})
+
+
+data 
+let
+    Source = ClarivateJournalCitationReportsCategoryGroups, 
+    addKey = fnJournalkey(Source),
+    addFT50 = Table.AddColumn(addKey, "FT50", each let list0 = List.Buffer(ft_stage[journalkey]),
+lengthlist = List.Buffer(ft_stage[length]),
+length = try lengthlist{List.PositionOf(list0, [journalkey])} otherwise 0 ,
+result = if length = 0 then "null" else if length <=2 then "FT50" else "FT50+" in result, type text),
+    addTuumik= Table.AddColumn(addFT50, "tuumik", (_)=> Table.RowCount(
+Table.SelectRows(tuumik,
+(check)=> Text.Contains([Category], check[Column1], Comparer.OrdinalIgnoreCase))), Int64.Type),
+    Custom1 = Table.AddColumn( addTuumik, "2021 JIF", each let list0 = List.Buffer(JIF2021[ISSN]), list1 = List.Buffer(JIF2021[#"2021 JIF"]), list00 = List.Buffer(JIF2021[eISSN]),
+result1 = try list1 {List.PositionOf(list0, [ISSN])} otherwise null, 
+result2 = try list1 {List.PositionOf(list00, [eISSN])} otherwise null, 
+result = if [ISSN]="N/A" then result2 else result1 
+ in result, Int64.Type),
+    Custom2 = Table.AddColumn( Custom1, "5 Year JIF 2021", each let list0 = List.Buffer(JIF2021[ISSN]), list1 = List.Buffer(JIF2021[#"5 Year JIF"]), list00 = List.Buffer(JIF2021[eISSN]),
+result1 = try list1 {List.PositionOf(list0, [ISSN])} otherwise null, 
+result2 = try list1 {List.PositionOf(list00, [eISSN])} otherwise null, 
+result = if [ISSN]="N/A" then result2 else result1  in result, Int64.Type),
+    #"Merged Queries" = Table.NestedJoin(Custom2, {"ISSN"}, publication, {"ISSN"}, "publication", JoinKind.LeftOuter),
+    #"Added Custom" = Table.AddColumn(#"Merged Queries", "PubCount", each Table.RowCount([publication]), Int64.Type)
+in
+    #"Added Custom"
+
+
+publication 
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\M teadus\2022_publikatsioonid_ETIS_1.1\Publications_2018-11.09.2023.xlsx"), null, true),
+    _workSheetName_Sheet = Source{[Item="_workSheetName",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(_workSheetName_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"GUID", type text}, {"Lühikirje", type text}, {"Aasta", Int64.Type}, {"Autorid, kellel on ETISe konto", type text}, {"Autorid", type text}, {"Pealkiri", type text}, {"Ajakiri / jätkuväljaanne", type text}, {"ISSN", type text}, {"DOI", type text}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Changed Type", "ISSN", Splitter.SplitTextByDelimiter("; ", QuoteStyle.None), {"ISSN", "eISSN"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"ISSN", type text}, {"eISSN", type text}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type1", each ([Aasta] >= 2020))
+in
+    #"Filtered Rows"
