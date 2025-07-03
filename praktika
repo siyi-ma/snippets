@@ -1,0 +1,52 @@
+#"Split Column by Delimiter" = Table.ExpandListColumn(Table.TransformColumns(#"Changed Type", {{"üliõpilaskood", Splitter.SplitTextByDelimiter(",", QuoteStyle.None), let itemType = (type nullable text) meta [Serialized.Text = true] in type {itemType}}}), "üliõpilaskood"),
+    #"Split Column by Delimiter1" = Table.ExpandListColumn(Table.TransformColumns(#"Split Column by Delimiter", {{"üliõpilaskood", Splitter.SplitTextByDelimiter(";", QuoteStyle.None), let itemType = (type nullable text) meta [Serialized.Text = true] in type {itemType}}}), "üliõpilaskood"),
+    #"Split Column by Delimiter2" = Table.ExpandListColumn(Table.TransformColumns(#"Split Column by Delimiter1", {{"üliõpilaskood", Splitter.SplitTextByDelimiter(" ", QuoteStyle.None), let itemType = (type nullable text) meta [Serialized.Text = true] in type {itemType}}}), "üliõpilaskood"),
+    #"Filtered Rows" = Table.SelectRows(#"Split Column by Delimiter2", each ([üliõpilaskood] <> null and [üliõpilaskood] <> "")),
+    #"Cleaned Text" = Table.TransformColumns(#"Filtered Rows",{{"üliõpilaskood", Text.Clean, type text}}),
+    #"Filtered Rows2" = Table.SelectRows(#"Cleaned Text", each ([üliõpilaskood] <> "")),
+    #"Renamed Columns" = Table.RenameColumns(#"Filtered Rows2",{{"juhandaja nimi", "juhendaja nimi"}}),
+    #"Added Custom" = Table.AddColumn(#"Renamed Columns", "Custom", each 
+let length = Text.Length([üliõpilaskood]), 
+output1 = Text.Start([üliõpilaskood],6) & Text.Start([õppekava],4),
+output2 = Text.Middle([Name], 8,10), result = if length  = 10 then [üliõpilaskood] else if length <=2 then output2 else output1 in result, type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom",{"üliõpilaskood"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Removed Columns",{{"Custom", "üliõpilaskood"}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Renamed Columns1",{"üliõpilasnimi", "üliõpilaskood", "õppekava", "praktikakoha nimetus", "riik", "registrikood", "veebiaadress", "juhendaja nimi", "ametikoht", "telefon", "e-post", "algus", "lõpp", "mitu tundi", "mitu nädalat", "1", "1.1", "2", "2.1", "3", "3.1", "4", "4.1", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "6", "7", "8", "9", "töökeel", "allikas"}),
+    #"Removed Duplicates" = Table.Distinct(#"Reordered Columns", {"üliõpilaskood"})
+in
+    #"Removed Duplicates"
+
+--------
+    nimi 
+yliopilaskood
+peaeriala
+
+2. ÜLEVAADE PRAKTIKA KÄIGUST
+
+2.1.1 Hinnang ettevalmistusele
+2.1.2 Hinnang ettevalmistusele_
+
+2.2.1 Hinnang toimetulekule
+2.2.2 Hinnang toimetulekule_
+
+2.3.1 Praktika käigus juurde õpitu
+2.3.2 Praktika käigus juurde õpitu_
+
+2.4.1 Hinnang uutele teadmistele ja oskustele
+2.4.2 Hinnang uutele teadmistele ja oskustele_
+
+2.5.1 Praktika käigus juurde õpitu - hinnang uutele teadmistele ja oskustele
+2.5.2 Praktika käigus juurde õpitu - hinnang uutele teadmistele ja oskustele_
+
+3. HINNANG PRAKTIKAKOHALE 
+
+3.1.1 Hinnang juhendamisprotsessile ja -käigule
+3.1.2 Hinnang juhendamisprotsessile ja -käigule_
+3.2.1 Valitud praktikakoha sobivus praktikaaine eesmärkide täitmiseks
+3.2.2 Valitud praktikakoha sobivus praktikaaine eesmärkide täitmiseks_
+
+kas tekstil kirjetatakse teemad seotud ERS (ethics, responsibility, and sustainability) ja SDG?
+
+You can make the flow yourself and then share ownership with the person who owns the folders or files in the OneDrive you are trying to connect to. 
+That person then has to go in, remove your connections (wherever applicable), and add their own connections. 
+From there you can go in to edit the flow and their OneDrive folders will appear for you to choose.
