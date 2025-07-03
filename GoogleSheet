@@ -1,0 +1,20 @@
+GoogleSheet QUERY  
+
+GA4MAJ_country_keyEvents
+
+=  QUERY({IMPORTRANGE("1fStZ97CPzjPoyMY_OJpJ7SA7Bvz4PT1rpG69kMOlb84", "BA!A3:E"); 
+IMPORTRANGE("1fStZ97CPzjPoyMY_OJpJ7SA7Bvz4PT1rpG69kMOlb84", "MA!A3:E"); 
+IMPORTRANGE("1fStZ97CPzjPoyMY_OJpJ7SA7Bvz4PT1rpG69kMOlb84", "BAen!A3:E"); 
+IMPORTRANGE("1fStZ97CPzjPoyMY_OJpJ7SA7Bvz4PT1rpG69kMOlb84", "MAen!A3:E")}, 
+"Select * Where Col5 matches '/sisseastuja/bakalaureuseoppe-erialad/avalik-haldus-ja-riigiteadused|/sisseastuja/magistrioppe-erialad/avaliku-sektori-juhtimine-ja-innovatsioon|/et/sisseastuja/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng|/sisseastuja/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng|/en/masters-programmes/technology-governance-and-sustainability|/sisseastuja/bakalaureuseoppe-erialad/oigusteadus|/en/bachelors-programmes/law|/et/sisseastuja/magistrioppe-erialad/oigusteadus|/sisseastuja/magistrioppe-erialad/oigusteadus|/en/masters-programmes/law|/sisseastuja/magistrioppe-erialad/personalijuhtimine|/en/masters-programmes/entrepreneurial-management-mba|/sisseastuja/bakalaureuseoppe-erialad/jatkusuutlik-ettevotlus-ja-ringmajandus|/sisseastuja/bakalaureuseoppe-erialad/rakenduslik-majandusteadus|/sisseastuja/magistrioppe-erialad/majandusanaluus|/sisseastuja/bakalaureuseoppe-erialad/arindus|/sisseastuja/magistrioppe-erialad/arirahandus-ja-majandusarvestus|/sisseastuja/magistrioppe-erialad/juhtimine-ja-turundus|/sisseastuja/bakalaureuseoppe-erialad/rahvusvaheline-arikorraldus|/en/bachelors-programmes/international-business-administration|/sisseastuja/magistrioppe-erialad/rahvusvaheline-arikorraldus|/en/masters-programmes/international-business-administration'
+Order by Col1 DESC")
+
+
+GA4_audienceOverview
+
+= QUERY({IMPORTRANGE("1bchvlbKuT4XhDMOLfISRHU5WTH2JYCSSSdNATlF7-7E", "BA!A3:L"); 
+IMPORTRANGE("1bchvlbKuT4XhDMOLfISRHU5WTH2JYCSSSdNATlF7-7E", "MA!A3:L"); 
+IMPORTRANGE("1bchvlbKuT4XhDMOLfISRHU5WTH2JYCSSSdNATlF7-7E", "BAen!A3:L"); 
+IMPORTRANGE("1bchvlbKuT4XhDMOLfISRHU5WTH2JYCSSSdNATlF7-7E", "MAen!A3:L")}, 
+"Select Col1, Col7, Col8, Col10, Col12 Where Col12 matches '/sisseastuja/bakalaureuseoppe-erialad/avalik-haldus-ja-riigiteadused|/sisseastuja/magistrioppe-erialad/avaliku-sektori-juhtimine-ja-innovatsioon|/et/sisseastuja/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng|/sisseastuja/magistrioppe-erialad/tehnoloogia-valitsemine-ja-kestlik-areng|/en/masters-programmes/technology-governance-and-sustainability|/sisseastuja/bakalaureuseoppe-erialad/oigusteadus|/en/bachelors-programmes/law|/et/sisseastuja/magistrioppe-erialad/oigusteadus|/sisseastuja/magistrioppe-erialad/oigusteadus|/en/masters-programmes/law|/sisseastuja/magistrioppe-erialad/personalijuhtimine|/en/masters-programmes/entrepreneurial-management-mba|/sisseastuja/bakalaureuseoppe-erialad/jatkusuutlik-ettevotlus-ja-ringmajandus|/sisseastuja/bakalaureuseoppe-erialad/rakenduslik-majandusteadus|/sisseastuja/magistrioppe-erialad/majandusanaluus|/sisseastuja/bakalaureuseoppe-erialad/arindus|/sisseastuja/magistrioppe-erialad/arirahandus-ja-majandusarvestus|/sisseastuja/magistrioppe-erialad/juhtimine-ja-turundus|/sisseastuja/bakalaureuseoppe-erialad/rahvusvaheline-arikorraldus|/en/bachelors-programmes/international-business-administration|/sisseastuja/magistrioppe-erialad/rahvusvaheline-arikorraldus|/en/masters-programmes/international-business-administration'
+Order by Col10 DESC Label Col1 'Total user', Col7 'Views', Col8 'Average session duration', Col10 'Date', Col12 'page path'")
