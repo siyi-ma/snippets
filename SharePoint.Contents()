@@ -1,0 +1,133 @@
+getExcel_õppekavades_ained
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_admin"),
+    Documents = Source{[Name="Documents"]}[Content],
+    A_oppetegevuseFailid = Documents{[Name="A_Õppetegevuse failid"]}[Content],
+    folder_oppekavad = A_oppetegevuseFailid {[Name="Õppekavad"]}[Content],
+    #"Õppekavades_ained xlsx" = folder_oppekavad{[Name="Õppekavades_ained.xlsx"]}[Content],
+    #"Imported Excel Workbook" = Excel.Workbook(#"Õppekavades_ained xlsx")
+in
+    #"Imported Excel Workbook"
+
+_folderM_Dashboard_TABB
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_Dashboard"),
+    Documents = Source{[Name="M_õppetöö"]}[Content],
+    TABB = Documents{[Name="TABB"]}[Content]
+    // https://livettu.sharepoint.com/:f:/r/sites/M_Dashboard/M_ppet/TABB?csf=1&web=1&e=9YnDo3
+in
+    TABB
+
+_folderA_A_Statistika =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_admin"),
+    Documents = Source{[Name="Documents"]}[Content],
+    A_A_Statistika = Documents{[Name="A_A_Statistika"]}[Content]
+in 
+    A_A_Statistika
+
+
+_folderStatistikaKaitsmised =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_admin"),
+    Documents = Source{[Name="Documents"]}[Content],
+    A_Oppetegevuse_failid = Documents{[Name="A_Õppetegevuse failid"]}[Content],
+    folerKaitsmisedLopetamine = A_Oppetegevuse_failid{[Name="Kaitsmised, lõpetamine"]}[Content],
+    folderStatistikaKaismised = folerKaitsmisedLopetamine {[Name="Statistika Kaitsmised"]} [Content]
+in 
+    folderStatistikaKaismised
+
+_folderOisCsv = 
+let
+    Source = SharePoint.Contents("https://livettu-my.sharepoint.com/personal/siyi_ma_taltech_ee"),
+    Documents = Source{[Name="Documents"]}[Content], 
+    folderOIS = Documents{[Name="ÕIS"]}[Content],
+    folderCsv = folderOIS{[Name="csv"]}[Content]
+in
+    folderCsv
+
+_folder_oisPraktika
+let
+    Source = SharePoint.Contents("https://livettu-my.sharepoint.com/personal/siyi_ma_taltech_ee"),
+    Documents = Source{[Name="Documents"]}[Content], 
+    folderOIS = Documents{[Name="ÕIS"]}[Content],
+    praktika = folderOIS{[Name="Praktika"]}[Content]
+in
+    praktika
+
+_folder_MDashboard_MPraktika
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_Dashboard"),
+    Documents = Source{[Name="Documents"]}[Content],
+    M_praktika = Documents{[Name="M_praktika"]}[Content],
+    #"hinnanguvorm_alates21s xlsx" = M_praktika{[Name="hinnanguvorm_alates21s.xlsx"]}[Content]
+in
+   M_praktika
+
+Excel.Workbook(File.Contents("C:\Users\siyi.ma\OneDrive - TalTech\PBI export\taltech_kavad.xlsx"), null, true)
+
+_folderOISParing =
+let
+    Source = SharePoint.Contents("https://livettu-my.sharepoint.com/personal/siyi_ma_taltech_ee"),
+    Documents = Source{[Name="Documents"]}[Content], 
+    folderOIS = Documents{[Name="ÕIS"]}[Content],
+    #"ÕIS päring" = folderOIS{[Name="ÕIS päring"]}[Content]
+in
+    #"ÕIS päring"
+
+
+_folder_AAStatistika =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_admin"),
+    Documents = Source{[Name="Documents"]}[Content],
+    A_A_Statistika = Documents{[Name="A_A_Statistika"]}[Content]
+in
+    A_A_Statistika
+
+_excelOppekavadesAined =
+let
+    Source = SharePoint.Contents("https://livettu.sharepoint.com/sites/M_admin"),
+    Documents = Source{[Name="Documents"]}[Content],
+    #"A_Õppetegevuse failid" = Documents{[Name="A_Õppetegevuse failid"]}[Content], 
+    #"folder_oppekavad" = #"A_Õppetegevuse failid" {[Name="Õppekavad"]}[Content],
+    #"Õppekavades_ained xlsx" =  #"folder_oppekavad"{[Name="Õppekavades_ained.xlsx"]}[Content]
+in
+    #"Õppekavades_ained xlsx"
+
+  
+_folderOIS_VV_Mparing
+let
+    Source = SharePoint.Contents("https://livettu-my.sharepoint.com/personal/siyi_ma_taltech_ee"),
+    Documents = Source{[Name="Documents"]}[Content], 
+    folderOIS = Documents{[Name="ÕIS"]}[Content],
+    vvStatAnalyys = folderOIS{[Name="Vastuvõtu statistika analüüsiks"]}[Content],
+    Custom1 = Table.SelectRows(
+ Table.SelectRows(vvStatAnalyys, each [Extension]=".xlsx"),
+ each Text.Contains([Name], "vastuvõtt", Comparer.OrdinalIgnoreCase) or Text.Contains([Name], "väljavõte", Comparer.OrdinalIgnoreCase) or Text.Contains([Name], "päring") or [Name] ="Majandusteaduskond 19-08-2020.xlsx" or [Name] = "Majanduse bakalaureus 2023 .xlsx" )
+in
+    Custom1
+
+
+# Call the function and save the output
+output_data = predict_2025_remaining(df, 'kumlkvalifitseeruv')
+
+# Generate the output file name with today's date
+today_date = datetime.now().strftime("%Y-%m-%d")
+output_folder = r"C:\Users\siyi.ma\OneDrive - Tallinna Tehnikaülikool\A_Õppetegevuse failid\Vastuvõtt\Statistika vastuvõtt\csv"
+output_file_name = os.path.join(output_folder, f"prognoos_{today_date}.csv")
+
+# Save the combined data to the new CSV file
+output_data.to_csv(output_file_name, index=False)
+print(f"Predictions added and saved to {output_file_name}")
+
+
+# Call the function and save the output
+output_data = predict_2025_remaining(df, 'kumlkvalifitseeruv')
+        
+# Generate the output file name with today's date
+today_date = datetime.now().strftime("%Y-%m-%d")
+output_file_name = f"prognoos_{today_date}.csv"
+        
+# Save the combined data to the new CSV file
+output_data.to_csv(output_file_name, index=False)
+print(f"Predictions added and saved to {output_file_name}")
