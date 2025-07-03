@@ -1,4 +1,4 @@
-
+REGEXREPLACE($M$1, "(.*): (.*)", "$2")
 
 OVER (event_name IN ("GA4_apply_here","GA4_Kandideeri_SAIS-is")
 
