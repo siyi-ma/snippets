@@ -1,0 +1,31 @@
+// let
+    // Source = GoogleAnalytics.Accounts(), 
+    // #"6675762" = Source{[Id="6675762"]}[Data],
+    // #"UA-6675762-20" = #"6675762"{[Id="UA-6675762-20"]}[Data],
+    // #"204992293" = #"UA-6675762-20"{[Id="204992293"]}[Data],
+    // #"Added Items" = Cube.Transform(#"204992293",
+        {
+            {Cube.AddAndExpandDimensionColumn, "ga:landingPagePath", {"ga:landingPagePath"}, {"Landing Page"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:pagePath", {"ga:pagePath"}, {"Page"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:pageDepth", {"ga:pageDepth"}, {"Page Depth"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:pageTitle", {"ga:pageTitle"}, {"Page Title"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:previousPagePath", {"ga:previousPagePath"}, {"Previous Page Path"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:secondPagePath", {"ga:secondPagePath"}, {"Second Page"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:sessionDurationBucket", {"ga:sessionDurationBucket"}, {"Session Duration"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:date", {"ga:date"}, {"Date"}},
+            {Cube.AddAndExpandDimensionColumn, "ga:daysSinceLastSession", {"ga:daysSinceLastSession"}, {"Days Since Last Session"}},
+            {Cube.AddMeasureColumn, "Pageviews", "ga:pageviews"},
+            {Cube.AddMeasureColumn, "Time on Page", "ga:timeOnPage"},
+            {Cube.AddMeasureColumn, "Unique Pageviews", "ga:uniquePageviews"},
+            {Cube.AddMeasureColumn, "Sessions", "ga:sessions"},
+            {Cube.AddMeasureColumn, "Unique Dimension Combinations", "ga:uniqueDimensionCombinations"},
+            {Cube.AddMeasureColumn, "Users", "ga:users"}
+        }),
+    // #"Removed Errors" = Table.RemoveRowsWithErrors(#"Added Items", {"Landing Page"}),
+    // #"Filtered Rows" = Table.SelectRows(#"Removed Errors", each ([Page] <> "/") and not Text.StartsWith([Page], "/kontaktid") and not Text.StartsWith([Page], "/_error") and not Text.StartsWith([Page], "/uudised")  and not Text.StartsWith([Page], "/suudmused") ),
+    // #"Extracted Text After Delimiter" = Table.TransformColumns(#"Filtered Rows", { {"Page", each Text.AfterDelimiter(_, "/"), type text}, {"Previous Page Path", each Text.AfterDelimiter(_, "/"), type text}}),
+    // #"Added Custom" = Table.AddColumn(#"Extracted Text After Delimiter", "Custom", each let _list = List.Buffer(dim_url[query]),
+result = List.PositionOf(_list, [Page]) in result),
+    // #"Filtered Rows1" = Table.SelectRows(#"Added Custom", each ([Custom] >=0))
+// in
+    //  #"Filtered Rows1"
