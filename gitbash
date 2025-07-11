@@ -1,0 +1,97 @@
+Excellent! You've made the code changes in VS Code, and now you just need to send them to GitHub. This is the final step in the development cycle.
+
+Here is the standard, step-by-step workflow to commit and push your changes using Git Bash.
+
+### Open Git Bash in Your Project Directory
+
+First, make sure your Git Bash terminal is open and in the correct folder.
+
+*   The easiest way is to go to your project folder in Windows File Explorer (`.../tunniplaan`), right-click inside it, and select **"Git Bash Here"**.
+*   Alternatively, open Git Bash and use the `cd` command to navigate there:
+    ```bash
+    cd "~/OneDrive - Tallinna Tehnikaülikool/YouWare/tunniplaan"
+    ```
+
+### The 3-Step Process: Status -> Add -> Commit -> Push
+
+#### Step 1: Check the Status (Good Habit)
+
+This is an optional but highly recommended first step. It shows you what changes Git has noticed.
+
+```bash
+git status
+```
+
+You will see an output similar to this:
+
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   your-javascript-file.js  <-- It shows the file you edited
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+This confirms that Git sees the changes you made in VS Code.
+
+#### Step 2: Stage the Changes (Add)
+
+Next, you need to tell Git which of the modified files you want to include in your next "snapshot" or commit. This is called "staging".
+
+Since you only modified one file, you can add it by name. However, a common and easy shortcut is to add all modified files at once.
+
+```bash
+git add .
+```
+
+*   The `.` is a shortcut that means "add all modified and new files in the current directory and subdirectories". It's very efficient.
+
+If you run `git status` again now, you'll see the file has moved to the "Changes to be committed" section (it will be green).
+
+#### Step 3: Commit the Changes
+
+Now, you save your staged changes into the repository's history with a descriptive message. A good commit message explains *why* you made the change.
+
+```bash
+git commit -m "fix: Update data fetch URLs to use CORS proxy"
+```
+
+*   `git commit`: The command to create a commit.
+*   `-m`: A flag that means the next thing in quotes is the commit message.
+
+After you run this, Git will confirm that it has created the commit locally.
+
+#### Step 4: Push to GitHub
+
+Your commit is now saved on your local computer. The final step is to upload this new commit to the remote repository on GitHub.
+
+```bash
+git push origin main
+```
+
+*   `git push`: The command to upload.
+*   `origin`: The name of your remote repository (the default name for the one on GitHub).
+*   `main`: The name of the branch you want to push your changes to.
+
+You'll see some output as Git communicates with GitHub and uploads your changes. Once it's done, your part is complete!
+
+### Summary of Commands to Type
+
+```bash
+# 1. See what you changed (optional but good)
+git status
+
+# 2. Stage all your changes for the commit
+git add .
+
+# 3. Save the changes with a message
+git commit -m "fix: Use CORS proxy for fetching release assets"
+
+# 4. Upload your new commit to GitHub
+git push origin main
+```
+
+After the push completes, wait 1-2 minutes for GitHub Pages to rebuild your site with the new code, and then you can refresh your webpage to see the result.
